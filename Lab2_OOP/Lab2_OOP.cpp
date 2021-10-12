@@ -1,20 +1,72 @@
-// Lab2_OOP.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include <iostream>
 
-int main()
-{
-    std::cout << "Hello World!\n";
+
+class LongInt {
+public:
+    std::string digits;
+
+    LongInt(std::string initialDigits = "") :digits(initialDigits) {
+    }
+
+    LongInt add(LongInt other) {
+        LongInt res;
+        int ost = 0;
+        int k = std::max(digits.length(), other.digits.length());
+        res.digits.insert(res.digits.begin(), k + 1, '0');
+
+        for (int i = k; i >= 0; i--) {
+            int t = 0;
+            if (i < other.digits.length()) {
+                t += other.digits[i] - '0';
+            }
+            if (i < digits.length()) {
+                t += digits[i] - '0';
+            }
+            t += ost;
+            if (t >= 10) {
+                ost = 1;
+                t -= 10;
+            }
+            else ost = 0;
+
+            res.digits[i + 1] = t + '0';
+        }
+        if (ost != 0) {
+            res.digits[0] += ost;
+        }
+        else {
+            res.digits.erase(0, 1);
+        }
+        return res;
+    }
+
+    void print() {
+        for (int i = 0; i < digits.length(); ++i) {
+            std::cout << digits[i];
+        }
+        std::cout << std::endl;
+    }
+
+
+    LongInt operator+(LongInt other) {
+        return add(other);
+    }
+
+};
+
+
+
+
+
+
+int main() {
+    LongInt a("999"), b("210"), c, o;
+
+    c = a.add(b);
+    o = a + b;
+    o.print();
+
+    c.print();
+
+    return 0;
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
