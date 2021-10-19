@@ -1,45 +1,41 @@
 #include <iostream>
+#include <vector>
+
+
+class Multiplication;
 
 
 class LongInt {
 public:
     std::string digits;
-
-    LongInt(std::string initialDigits = "") :digits(initialDigits) {
-    }
-
+    
+    
     LongInt add(LongInt other) {
-        LongInt res;
-        int ost = 0;
+        int temp = 0;
+        bool next_order = false;
+        LongInt res("00");
         int k = std::max(digits.length(), other.digits.length());
-        res.digits.insert(res.digits.begin(), k + 1, '0');
+        for (int i = 0; i < k; i++) {
+            temp = other.digits[i] + digits[i] ;
 
-        for (int i = k; i >= 0; i--) {
-            int t = 0;
-            if (i < other.digits.length()) {
-                t += other.digits[i] - '0';
+            if (temp >= 10) {
+                res.digits[i] = temp % 10 + '0';
             }
-            if (i < digits.length()) {
-                t += digits[i] - '0';
+            else {
+                res.digits[i] = temp + '0';
+                temp = 0;
             }
-            t += ost;
-            if (t >= 10) {
-                ost = 1;
-                t -= 10;
-            }
-            else ost = 0;
-
-            res.digits[i + 1] = t + '0';
+            if (i == 0 && temp / 10 != 0)
+                next_order = true;
+            temp /= 10;
         }
-        if (ost != 0) {
-            res.digits[0] += ost;
-        }
-        else {
-            res.digits.erase(0, 1);
-        }
+        if (next_order)
+            res.digits.insert(0, 1, '1');
         return res;
     }
 
+    
+    
     void print() {
         for (int i = 0; i < digits.length(); ++i) {
             std::cout << digits[i];
@@ -52,7 +48,55 @@ public:
         return add(other);
     }
 
+    Multiplication* multiplication;
+   
+    LongInt operator*(LongInt& other) { return multiplication->multiply(*this, other); };
+
+
 };
+
+
+class Multiplication {
+public:
+    virtual LongInt multiply(LongInt a, LongInt b) = 0;
+};
+
+
+class KaratsubaMultiplication : public Multiplication {
+public:
+    LongInt multiply(LongInt a, LongInt b);
+};
+
+
+class NaiveMultiplication : public Multiplication {
+public:
+    LongInt multiply(LongInt a, LongInt b) {};
+};
+
+
+LongInt LongInt::operator*(LongInt& other) {
+    return multiplication->multiply(*this, other);
+}
+
+
+LongInt KaratsubaMultiplication::multiply(LongInt a, LongInt b) {
+    LongInt res;
+    std::cout << "Karatsuba ok";
+    return res;
+}
+
+
+LongInt NaiveMultiplication::multiply(LongInt a, LongInt b) {
+    LongInt res;
+    std::cout << "Naive ok";
+    return res;
+}
+
+
+
+
+
+
 
 
 
@@ -60,13 +104,14 @@ public:
 
 
 int main() {
-    LongInt a("999"), b("210"), c, o;
-
-    c = a.add(b);
+    LongInt a, b, c, o;
+    a.multiplication = new KaratsubaMultiplication();
+    c = a * b;
+    /* c = a.add(b);
     o = a + b;
     o.print();
 
-    c.print();
-
+    c.print();*/
+    a.multiplication = new NaiveMultiplication();
     return 0;
 }
