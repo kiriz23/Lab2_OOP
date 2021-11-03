@@ -64,6 +64,16 @@ public:
     }
 
 
+    LongInt(const LongInt& l) {
+        this->is_negative = l.is_negative;
+        long long k = l.digits.size();
+        this->digits.resize(k);
+        for (int i = 0; i < k; i++) {
+            this->digits[i] = l.digits[i];
+        }
+    }
+
+
     const LongInt operator +() const {
         return LongInt(*this);
     }
@@ -370,7 +380,7 @@ const LongInt LongInt::pow(LongInt n) const {
 LongInt Karatsuba(const LongInt& left, const LongInt& right) {
     if (left<(LongInt("10")) or right < (LongInt("10"))) return (left*right);
     
-    LongInt res("0"),x0("0"),x1("0"),y0("0"),y1("0"),z0("0"),z1("0"),z2("0"),a1("0"),b1("0");
+    LongInt res("0"), x0("0"), x1("0"), y0("0"), y1("0"), z0("0"), z1("0"), z2("0");
     res.digits.resize(left.digits.size() + right.digits.size());
     long long k = floor(std::min(left.digits.size(),right.digits.size()) / 2);
     x1.digits.resize(left.digits.size()-k);
@@ -389,15 +399,12 @@ LongInt Karatsuba(const LongInt& left, const LongInt& right) {
     for (int i = k; i < right.digits.size(); i++) {
         y0.digits[i - k] = right.digits[i];
     }
-    res.digits.resize(left.digits.size() + right.digits.size());
-    z0.digits.resize(x0.digits.size() + y0.digits.size());
-    z1.digits.resize((x0+x1).digits.size() + (y0+y1).digits.size());
-    z2.digits.resize(x1.digits.size() + y1.digits.size());
-    z0 = Karatsuba(x1, y1);
-    z1 = Karatsuba(x0 + x1, y0 + y1);
-    z2 = Karatsuba(x0, y0);
     
-    res = (z2 * LongInt(static_cast<long long>(pow(10, (k * 2))))) + ((z1 - z2 - z0) * LongInt(static_cast<long long>(pow(10, (k))))) + z0;
+    z0 = LongInt(Karatsuba(x1, y1));
+    z1 = LongInt(Karatsuba(x0 + x1, y0 + y1));
+    z2 = LongInt(Karatsuba(x0, y0));
+    
+    res = LongInt((z2 * LongInt(static_cast<long long>(pow(10, (k * 2))))) + ((z1 - z2 - z0) * LongInt(static_cast<long long>(pow(10, (k))))) + z0);
     
     return res;
 
