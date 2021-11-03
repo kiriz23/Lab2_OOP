@@ -3,6 +3,7 @@
 #include <sstream>
 #include<string>
 #include <iomanip>
+#include <cmath>
 
 
 class LongInt {
@@ -12,7 +13,7 @@ public:
     
     std::vector<int>digits;
     bool is_negative;
-    static const int BASE = 1000000000;
+    static const int BASE = 10;
     
     void remove_leading_zeros() {
         while (this->digits.size() > 1 && this->digits.back() == 0) {
@@ -34,11 +35,11 @@ public:
             else {
                 this->is_negative = false;
             }
-            for (long long i = str.length(); i > 0; i -= 9) {
-                if (i < 9)
+            for (long long i = str.length(); i > 0; i -= 1) {
+                if (i < 1)
                     this->digits.push_back(atoi(str.substr(0, i).c_str()));
                 else
-                    this->digits.push_back(atoi(str.substr(i - 9, 9).c_str()));
+                    this->digits.push_back(atoi(str.substr(i - 1, 1).c_str()));
             }
             this->remove_leading_zeros();
         }
@@ -105,6 +106,12 @@ public:
 
     const LongInt pow(LongInt n) const;
 
+    LongInt Karatsuba(const LongInt& left, const LongInt& right);
+    
+    
+
+   
+
 };
 
 
@@ -115,7 +122,7 @@ std::ostream& operator <<(std::ostream& os, const LongInt& bi) {
         os << bi.digits.back();
         char old_fill = os.fill('0');
         for (long long i = static_cast<long long>(bi.digits.size()) - 2; i >= 0; --i) {
-            os << std::setw(9) << bi.digits[i];
+            os << std::setw(1) << bi.digits[i];
         }
 
         os.fill(old_fill);
@@ -123,6 +130,10 @@ std::ostream& operator <<(std::ostream& os, const LongInt& bi) {
 
     return os;
 }
+
+
+
+
 
 
 bool operator ==(const LongInt& left, const LongInt& right) {
@@ -349,12 +360,68 @@ const LongInt LongInt::pow(LongInt n) const {
 
 
 
+
+
+
+
+
+
+
+LongInt Karatsuba(const LongInt& left, const LongInt& right) {
+    if (left<(LongInt("10")) or right < (LongInt("10"))) return (left*right);
+    
+    LongInt res("0"),x0("0"),x1("0"),y0("0"),y1("0"),z0("0"),z1("0"),z2("0"),a1("0"),b1("0");
+    res.digits.resize(left.digits.size() + right.digits.size());
+    long long k = floor(std::min(left.digits.size(),right.digits.size()) / 2);
+    x1.digits.resize(left.digits.size()-k);
+    x0.digits.resize(k);
+    y1.digits.resize(right.digits.size()-k);
+    y0.digits.resize(k);
+    for (int i = 0; i < k;i++) {
+        x1.digits[i] = left.digits[i];
+    }
+    for (int i = k; i <left.digits.size(); i++) {
+            x0.digits[i-k] = left.digits[i];
+    }
+    for (int i = 0; i < k; i++) {
+        y1.digits[i] = right.digits[i];
+    }
+    for (int i = k; i < right.digits.size(); i++) {
+        y0.digits[i - k] = right.digits[i];
+    }
+    res.digits.resize(left.digits.size() + right.digits.size());
+    z0.digits.resize(x0.digits.size() + y0.digits.size());
+    z1.digits.resize((x0+x1).digits.size() + (y0+y1).digits.size());
+    z2.digits.resize(x1.digits.size() + y1.digits.size());
+    z0 = Karatsuba(x1, y1);
+    z1 = Karatsuba(x0 + x1, y0 + y1);
+    z2 = Karatsuba(x0, y0);
+    
+    res = (z2 * LongInt(static_cast<long long>(pow(10, (k * 2))))) + ((z1 - z2 - z0) * LongInt(static_cast<long long>(pow(10, (k))))) + z0;
+    
+    return res;
+
+}
+
+
+
+
+
+
+
+
+
 int main() {
-    long long b = 21;
-    LongInt a("201");
+    long long b = 12334311;
+    LongInt a("22333311");
     LongInt c(b);
-    --a;
-    std::cout <<( a.pow(b));
-    std::cout << "ok";
+    LongInt e("0");
+    LongInt x("0");
+    x = (Karatsuba(a, c));
+    std::cout <<x;
+    std::cout << "Kara" << std::endl;
+    e = a * c;
+    std::cout << e;
+    
     return 0;
 }
