@@ -381,24 +381,16 @@ LongInt Karatsuba(const LongInt& left, const LongInt& right) {
     if (left<(LongInt("10")) or right < (LongInt("10"))) return (left*right);
     
     LongInt res("0"), x0("0"), x1("0"), y0("0"), y1("0"), z0("0"), z1("0"), z2("0");
-    res.digits.resize(left.digits.size() + right.digits.size());
-    long long k = floor(std::min(left.digits.size(),right.digits.size()) / 2);
+    long long m = std::min(left.digits.size(), right.digits.size());
+    long long k = floor( m/ 2);
     x1.digits.resize(left.digits.size()-k);
     x0.digits.resize(k);
     y1.digits.resize(right.digits.size()-k);
     y0.digits.resize(k);
-    for (int i = 0; i < k;i++) {
-        x1.digits[i] = left.digits[i];
-    }
-    for (int i = k; i <left.digits.size(); i++) {
-            x0.digits[i-k] = left.digits[i];
-    }
-    for (int i = 0; i < k; i++) {
-        y1.digits[i] = right.digits[i];
-    }
-    for (int i = k; i < right.digits.size(); i++) {
-        y0.digits[i - k] = right.digits[i];
-    }
+    x1.digits = { left.digits.begin(), left.digits.begin() + k };
+    x0.digits = { left.digits.begin() + k, left.digits.end() };
+    y1.digits = { right.digits.begin(), right.digits.begin() + k };
+    y0.digits = { right.digits.begin() + k, right.digits.end() };
     
     z0 = LongInt(Karatsuba(x1, y1));
     z1 = LongInt(Karatsuba(x0 + x1, y0 + y1));
@@ -419,8 +411,8 @@ LongInt Karatsuba(const LongInt& left, const LongInt& right) {
 
 
 int main() {
-    long long b = 12334311;
-    LongInt a("22333311");
+    long long b = 1233431114353413424;
+    LongInt a("22333312222");
     LongInt c(b);
     LongInt e("0");
     LongInt x("0");
