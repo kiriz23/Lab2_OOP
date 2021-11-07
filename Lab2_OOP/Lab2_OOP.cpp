@@ -4,6 +4,7 @@
 #include<string>
 #include <iomanip>
 #include <cmath>
+#include <chrono>
 
 
 class LongInt {
@@ -213,14 +214,15 @@ const LongInt operator +(LongInt left, const LongInt& right) {
     }
     else if (right.is_negative) return left - (-right);
     int carry = 0;
+    LongInt res("0");
     for (size_t i = 0; i < std::max(left.digits.size(), right.digits.size()) || carry != 0; ++i) {
-        if (i == left.digits.size()) left.digits.push_back(0);
-        left.digits[i] += carry + (i < right.digits.size() ? right.digits[i] : 0);
-        carry = left.digits[i] >= LongInt::BASE;
-        if (carry != 0) left.digits[i] -= LongInt::BASE;
+        if (i == res.digits.size()) res.digits.push_back(0);
+        res.digits[i] = left.digits[i]+ carry + (i < right.digits.size() ? right.digits[i] : 0);
+        carry = res.digits[i] >= LongInt::BASE;
+        if (carry != 0) res.digits[i]= left.digits[i]-LongInt::BASE;
     }
 
-    return left;
+    return res;
 }
 
 const LongInt operator -(LongInt left, const LongInt& right) {
@@ -228,14 +230,16 @@ const LongInt operator -(LongInt left, const LongInt& right) {
     else if (left.is_negative) return -(-left + right);
     else if (left < right) return -(right - left);
     int carry = 0;
+    LongInt res("0");
+    res.digits.resize(std::max(left.digits.size(), right.digits.size()));
     for (size_t i = 0; i < right.digits.size() || carry != 0; ++i) {
-        left.digits[i] -= carry + (i < right.digits.size() ? right.digits[i] : 0);
-        carry = left.digits[i] < 0;
-        if (carry != 0) left.digits[i] += LongInt::BASE;
+        res.digits[i]= left.digits[i] - carry - (i < right.digits.size() ? right.digits[i] : 0);
+        carry = res.digits[i] < 0;
+        if (carry != 0) res.digits[i] += LongInt::BASE;
     }
 
-    left.remove_leading_zeros();
-    return left;
+    res.remove_leading_zeros();
+    return res;
 }
 
 
@@ -396,9 +400,95 @@ LongInt Karatsuba(const LongInt& left, const LongInt& right) {
     z1 = LongInt(Karatsuba(x0 + x1, y0 + y1));
     z2 = LongInt(Karatsuba(x0, y0));
     
-    res = LongInt((z2 * LongInt(static_cast<long long>(pow(10, (k * 2))))) + ((z1 - z2 - z0) * LongInt(static_cast<long long>(pow(10, (k))))) + z0);
+    res = LongInt((z2 * LongInt(static_cast<long long>(pow(LongInt::BASE, (k * 2))))) + (((z1 - z2 )- z0) * LongInt(static_cast<long long>(pow(LongInt::BASE, (k))))) + z0);
     
     return res;
+
+}
+
+
+LongInt Toom_Cook(const LongInt& left, const LongInt& right) {
+if (right.digits.size() < left.digits.size()) return Toom_Cook(right, left);
+LongInt res("0"), x0("0"), x1("0"), x2("0"), y0("0"), y1("0"), y2("0"), y2byx2("0"), y1byx1("0"), y0byx0("0"), z10("0"), z20("0"), z21("0"), y2_y1("0"), y2_y0("0");
+LongInt y1_y0("0"), x1_x0("0"), x2_x0("0"), x2_x1("0"), res_pow_m1("0"), res_pow_m2("0"), res_pow_0("0"), res_pow_2m1("0"), res_pow_2m2("0"), res_pow_m2m1("0");
+long long size = std::min(left.digits.size(), right.digits.size());
+long long actual_size = size;
+if (size < 4) { return left * right; }
+size = size - size % 3;
+for (long long  i = 0; i < size / 3; i++)
+{
+    x0.digits.push_back(left.digits[i]);
+    y0.digits.push_back(right.digits[i]);
+}
+for (long long  i = size / 3; i < 2 * size / 3; i++)
+{
+    x1.digits.push_back(left.digits[i]);
+    y1.digits.push_back(right.digits[i]);
+}
+for (long long  i = 2 * size / 3; i < actual_size; i++)
+{
+    x2.digits.push_back(left.digits[i]);
+    y2.digits.push_back(right.digits[i]);
+}
+for (long long  i = actual_size; i < right.digits.size(); i++)
+{
+    y2.digits.push_back(right.digits[i]);
+}
+y2byx2 = Toom_Cook(x2,y2);
+y1byx1 = Toom_Cook(x1, y1);
+y0byx0 = Toom_Cook(x0, y0);
+
+x2_x1 = x2+ x1;
+x2_x0 = x2+ x0;
+x1_x0 = x1+ x0;
+y2_y1 = y2+y1;
+y2_y0 = y2+ y0;
+y1_y0 = y1+y0;
+
+z10 = Toom_Cook(y1_y0, x1_x0);
+z10 = z10-y1byx1;
+z10 = z10-y0byx0;
+
+z20 = Toom_Cook(y2_y0, x2_x0);
+z20 = z20-y2byx2;
+z20 = z20- y0byx0;
+
+z21 = Toom_Cook(y2_y1, x2_x1);
+z21 = z21- y2byx2;
+z21 = z21-y1byx1;
+
+for (long long  i = 0; i < size / 3; i++)
+{
+    res_pow_m1.digits.push_back(0);
+}
+for (long long  i = 0; i < 2 * size / 3; i++)
+{
+    res_pow_2m1.digits.push_back(0);
+}
+for (long long  i = 0; i < 2 * size / 3; i++)
+{
+    res_pow_m2.digits.push_back(0);
+}
+for (long long i = 0; i < 4 * size / 3; i++)
+{
+    res_pow_2m2.digits.push_back(0);
+}
+for (long long i = 0; i < 3 * size / 3; i++)
+{
+    res_pow_m2m1.digits.push_back(0);
+}
+res_pow_m1.digits.insert(end(res_pow_m1.digits), begin(z10.digits), end(z10.digits));
+res_pow_2m1.digits.insert(end(res_pow_2m1.digits), begin(y1byx1.digits), end(y1byx1.digits));
+res_pow_m2.digits.insert(end(res_pow_m2.digits), begin(z20.digits), end(z20.digits));
+res_pow_2m2.digits.insert(end(res_pow_2m2.digits), begin(y2byx2.digits), end(y2byx2.digits));
+res_pow_m2m1.digits.insert(end(res_pow_m2m1.digits), begin(z21.digits), end(z21.digits));
+res_pow_0 = y0byx0;
+res = res_pow_2m2+ res_pow_m2;
+res = res+res_pow_2m1;
+res = res+ res_pow_m1;
+res = res+ res_pow_m2m1;
+res = res+res_pow_0;
+return res;
 
 }
 
@@ -409,18 +499,47 @@ LongInt Karatsuba(const LongInt& left, const LongInt& right) {
 
 
 
-
 int main() {
-    long long b = 1233431114353413424;
-    LongInt a("22333312222");
+  /*  std::cout << "Enter two long numbers"<<std::endl;
+    std::string str1, str2;
+    std::cin >> str1 >> str2;
+    LongInt first(str1), second(str2);
+    std::cout << "Enter multiplication type: " << std::endl;
+    std::cout << "\t1 - Naive Multiplication" << std::endl;
+    std::cout << "\t2 - Karatsuba Multiplication" << std::endl;
+    int choise;
+    std::cin >> choise;
+    while (choise != 0) {
+        switch (choise) {
+        case 1:
+            std::cout << first * second;
+            break;
+        case 2:
+            std::cout << Karatsuba(first, second);
+            break;
+        default:
+            std::cout << "Wrong input!!!\nOnly 1-2 requires. Type 0 to exit or try again";
+        }
+        std::cout << std::endl;
+        std::cin >> choise;
+    }
+    return 0;
+    
+    */
+    
+    
+    std::string b = "5433";
+    LongInt a("1233");
     LongInt c(b);
     LongInt e("0");
-    LongInt x("0");
-    x = (Karatsuba(a, c));
-    std::cout <<x;
-    std::cout << "Kara" << std::endl;
-    e = a * c;
-    std::cout << e;
     
+   
+    e =( a * c);
+    
+    std::cout << e<<std::endl;
+    
+    LongInt f("0");
+    f = Toom_Cook(a, c);
+    std::cout << f <<"Tom" << std::endl;
     return 0;
 }
