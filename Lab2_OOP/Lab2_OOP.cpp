@@ -459,104 +459,96 @@ LongInt Karatsuba(LongInt& b1, LongInt& b2) {
 }
 
 
+
+
 LongInt Toom_Cook(const LongInt& left, const LongInt& right) {
-if (right.digits.size() < left.digits.size()) return Toom_Cook(right, left);
-LongInt res("0"), x0("0"), x1("0"), x2("0"), y0("0"), y1("0"), y2("0"), y2byx2("0"), y1byx1("0"), y0byx0("0"), z10("0"), z20("0"), z21("0"), y2_y1("0"), y2_y0("0");
-LongInt y1_y0("0"), x1_x0("0"), x2_x0("0"), x2_x1("0"), res_pow_m1("0"), res_pow_m2("0"), res_pow_0("0"), res_pow_2m1("0"), res_pow_2m2("0"), res_pow_m2m1("0");
-long long size = std::min(left.digits.size(), right.digits.size());
-long long actual_size = size;
-if (size < 4) { return left * right; }
-size = size - size % 3;
-x0.digits.resize(size / 3);
-y0.digits.resize(size / 3);
-x1.digits.resize(size / 3);
-y1.digits.resize(size / 3);
-x2.digits.resize(size / 3);
-y2.digits.resize(right.digits.size()- actual_size);
-for (long long  i = 0; i < size / 3; i++)
-{
-    x0.digits.push_back(left.digits[i]);
-    y0.digits.push_back(right.digits[i]);
-}
-for (long long  i = size / 3; i < 2 * size / 3; i++)
-{
-    x1.digits.push_back(left.digits[i]);
-    y1.digits.push_back(right.digits[i]);
-}
-for (long long  i = 2 * size / 3; i < actual_size; i++)
-{
-    x2.digits.push_back(left.digits[i]);
-    y2.digits.push_back(right.digits[i]);
-}
-for (long long  i = actual_size; i < right.digits.size(); i++)
-{
-    y2.digits.push_back(right.digits[i]);
-}
-y2byx2 = LongInt(Toom_Cook(x2,y2));
-y1byx1 = LongInt(Toom_Cook(x1, y1));
-y0byx0 = LongInt(Toom_Cook(x0, y0));
+    if (right.digits.size() < left.digits.size()) return Toom_Cook(right, left);
+    LongInt res("0"), x0("0"), x1("0"), x2("0"), y0("0"), y1("0"), y2("0"), y2byx2("0"), y1byx1("0"), y0byx0("0"), z10("0"), z20("0"), z21("0"), y2_y1("0"), y2_y0("0");
+    LongInt y1_y0("0"), x1_x0("0"), x2_x0("0"), x2_x1("0"), res_pow_m1("0"), res_pow_m2("0"), res_pow_0("0"), res_pow_2m1("0"), res_pow_2m2("0"), res_pow_m2m1("0");
+    long long size = std::min(left.digits.size(), right.digits.size());
+    long long actual_size = size;
+    if (size < 4) { return left * right; }
+    size = size - size % 3;
+    for (long long i = 0; i < size / 3; i++)
+    {
+        x0.digits.push_back(left.digits[i]);
+        y0.digits.push_back(right.digits[i]);
+    }
+    for (long long i = size / 3; i < 2 * size / 3; i++)
+    {
+        x1.digits.push_back(left.digits[i]);
+        y1.digits.push_back(right.digits[i]);
+    }
+    for (long long i = 2 * size / 3; i < actual_size; i++)
+    {
+        x2.digits.push_back(left.digits[i]);
+        y2.digits.push_back(right.digits[i]);
+    }
+    for (long long i = actual_size; i < right.digits.size(); i++)
+    {
+        y2.digits.push_back(right.digits[i]);
+    }
+    y2byx2 = Toom_Cook(x2, y2);
+    y1byx1 = Toom_Cook(x1, y1);
+    y0byx0 = Toom_Cook(x0, y0);
 
-x2_x1 = LongInt(x2+ x1);
-x2_x0 = LongInt(x2+ x0);
-x1_x0 = LongInt(x1+ x0);
-y2_y1 = LongInt(y2+y1);
-y2_y0 = LongInt(y2+ y0);
-y1_y0 = LongInt(y1+y0);
+    x2_x1 = x2 + x1;
+    x2_x0 = x2 + x0;
+    x1_x0 = x1 + x0;
+    y2_y1 = y2 + y1;
+    y2_y0 = y2 + y0;
+    y1_y0 = y1 + y0;
 
-z10 = LongInt(Toom_Cook(y1_y0, x1_x0));
-z10 = LongInt(z10-y1byx1);
-z10 = LongInt(z10-y0byx0);
+    z10 = Toom_Cook(y1_y0, x1_x0);
+    z10 = z10 - y1byx1;
+    z10 = z10 - y0byx0;
 
-z20 = LongInt(Toom_Cook(y2_y0, x2_x0));
-z20 = LongInt(z20-y2byx2);
-z20 = LongInt(z20- y0byx0);
+    z20 = Toom_Cook(y2_y0, x2_x0);
+    z20 = z20 - y2byx2;
+    z20 = z20 - y0byx0;
 
-z21 = LongInt(Toom_Cook(y2_y1, x2_x1));
-z21 = LongInt(z21- y2byx2);
-z21 = LongInt(z21-y1byx1);
-res_pow_m1.digits.resize(size / 3);
-res_pow_2m1.digits.resize(2 * size / 3);
-res_pow_m2.digits.resize(2 * size / 3);
-res_pow_2m2.digits.resize(4 * size / 3);
-res_pow_m2m1.digits.resize(3 * size / 3);
+    z21 = Toom_Cook(y2_y1, x2_x1);
+    z21 = z21 - y2byx2;
+    z21 = z21 - y1byx1;
 
-
-
-for (long long  i = 0; i < size / 3; i++)
-{
-    res_pow_m1.digits.push_back(0);
-}
-for (long long  i = 0; i < 2 * size / 3; i++)
-{
-    res_pow_2m1.digits.push_back(0);
-}
-for (long long  i = 0; i < 2 * size / 3; i++)
-{
-    res_pow_m2.digits.push_back(0);
-}
-for (long long i = 0; i < 4 * size / 3; i++)
-{
-    res_pow_2m2.digits.push_back(0);
-}
-for (long long i = 0; i < 3 * size / 3; i++)
-{
-    res_pow_m2m1.digits.push_back(0);
-}
-res_pow_m1.digits.insert(end(res_pow_m1.digits), begin(z10.digits), end(z10.digits));
-res_pow_2m1.digits.insert(end(res_pow_2m1.digits), begin(y1byx1.digits), end(y1byx1.digits));
-res_pow_m2.digits.insert(end(res_pow_m2.digits), begin(z20.digits), end(z20.digits));
-res_pow_2m2.digits.insert(end(res_pow_2m2.digits), begin(y2byx2.digits), end(y2byx2.digits));
-res_pow_m2m1.digits.insert(end(res_pow_m2m1.digits), begin(z21.digits), end(z21.digits));
-res_pow_0 = LongInt(y0byx0);
-res = LongInt(res_pow_2m2 + res_pow_m2);
-res = LongInt(res + res_pow_2m1);
-res = LongInt(res + res_pow_m1);
-res = LongInt(res + res_pow_m2m1);
-res = LongInt(res + res_pow_0);
-
-return res;
+    for (long long i = 0; i < size / 3; i++)
+    {
+        res_pow_m1.digits.push_back(0);
+    }
+    for (long long i = 0; i < 2 * size / 3; i++)
+    {
+        res_pow_2m1.digits.push_back(0);
+    }
+    for (long long i = 0; i < 2 * size / 3; i++)
+    {
+        res_pow_m2.digits.push_back(0);
+    }
+    for (long long i = 0; i < 4 * size / 3; i++)
+    {
+        res_pow_2m2.digits.push_back(0);
+    }
+    for (long long i = 0; i < 3 * size / 3; i++)
+    {
+        res_pow_m2m1.digits.push_back(0);
+    }
+    res_pow_m1.digits.insert(end(res_pow_m1.digits), begin(z10.digits), end(z10.digits));
+    res_pow_2m1.digits.insert(end(res_pow_2m1.digits), begin(y1byx1.digits), end(y1byx1.digits));
+    res_pow_m2.digits.insert(end(res_pow_m2.digits), begin(z20.digits), end(z20.digits));
+    res_pow_2m2.digits.insert(end(res_pow_2m2.digits), begin(y2byx2.digits), end(y2byx2.digits));
+    res_pow_m2m1.digits.insert(end(res_pow_m2m1.digits), begin(z21.digits), end(z21.digits));
+    res_pow_0 = y0byx0;
+    res = res_pow_2m2 + res_pow_m2;
+    res = res + res_pow_2m1;
+    res = res + res_pow_m1;
+    res = res + res_pow_m2m1;
+    res = res + res_pow_0;
+    return res;
 
 }
+
+
+
+
 
 
 int LongInt::get_base() {
@@ -631,6 +623,128 @@ LongInt Shonhage(LongInt& b1, LongInt& b2) {
 }
 
 
+int jacobi(long long n, long long k) {
+    n %= k;
+    int t = 1;
+    while (n != 0) {
+        while (n % 2 == 0) {
+            n /= 2;
+            int r = k % 8;
+            if (r == 3 || r == 5)
+                t = -t;
+        }
+        std::swap(n, k);
+        if (n % 4 == 3 && k % 4 == 3)
+            t = -t;
+        n %= k;
+    }
+    return k == 1 ? t : 0;
+}
+
+long long power(long long a, long long m, long long mod) {
+    long long res = 1;
+    a = a % mod;
+
+    while (m > 0) {
+        if (m % 2)
+            res = (res * a) % mod;
+
+        a = (a * a) % mod;
+        m /= 2;
+    }
+    return res % mod;
+
+}
+
+
+
+bool M_R(long long n, long long k) {
+
+    if (n != 2 && !(n % 2)) {
+        return false;
+    }
+
+    long long m = n - 1;
+
+    while (!(m % 2)) {
+        m /= 2;
+    }
+
+    for (int i = 0; i < k; i++)
+    {
+        long long a = rand() % (n - 1) + 2;
+
+        long long u = power(a, m, n);
+
+        while (m != n - 1 && u != 1 && u != n - 1) {
+            u = power(u, 2, n);
+            m *= 2;
+        }
+
+        if (u != n - 1 && !(m % 2)) {
+            return false;
+        }
+
+    }
+    return true;
+
+}
+
+bool Lm(long long n, long long k) {
+    if (n != 2 && !(n % 2)) {
+        return false;
+    }
+    for (int i = 0; i < k; ++i)
+    {
+        long long a = rand() % (n - 1) + 2;
+        long long p = (n - 1) / 2;
+        int r = power(a, p, n);
+        if (r != 1 && r != n - 1)
+        {
+            return false;
+        }
+        if (r == 1 || r == (n - 1) % n)
+        {
+            return true;
+        }
+    }
+}
+
+bool S_SH(long long n, long long k)
+{
+    if (n != 2 && !(n % 2)) {
+        return false;
+    }
+    int j;
+    for (int i = 0; i < k; ++i)
+    {
+        long long a = rand() % (n - 3) + 2;
+        long long p = (n - 1) / 2;
+        long long r = power(a, p, n);
+        if (r != 1 && r != n - 1)
+        {
+            return false;
+        }
+
+        j = jacobi(a, n);
+        if (r != j % n) { return false; }
+        else {
+            return true;
+        }
+    }
+
+
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -651,36 +765,40 @@ LongInt Shonhage(LongInt& b1, LongInt& b2) {
 
 
 int main() {
-  /*  std::cout << "Enter two long numbers"<<std::endl;
-    std::string str1, str2;
-    std::cin >> str1 >> str2;
-    LongInt first(str1), second(str2);
-    std::cout << "Enter multiplication type: " << std::endl;
-    std::cout << "\t1 - Naive Multiplication" << std::endl;
-    std::cout << "\t2 - Karatsuba Multiplication" << std::endl;
-    int choise;
-    std::cin >> choise;
-    while (choise != 0) {
-        switch (choise) {
-        case 1:
-            std::cout << first * second;
-            break;
-        case 2:
-            std::cout << Karatsuba(first, second);
-            break;
-        default:
-            std::cout << "Wrong input!!!\nOnly 1-2 requires. Type 0 to exit or try again";
-        }
-        std::cout << std::endl;
-        std::cin >> choise;
-    }
-    return 0;
+  //std::cout << "Enter two long numbers"<<std::endl;
+  //  std::string str1, str2;
+  //  std::cin >> str1 >> str2;
+  //  LongInt first(str1), second(str2);
+  //  std::cout << "Enter multiplication type: " << std::endl;
+  //  std::cout << "\t1 - Naive Multiplication" << std::endl;
+  //  std::cout << "\t2 - Karatsuba Multiplication" << std::endl;
+  //  std::cout << "\t3 - Shonhage Multiplication" << std::endl;
+  //  int choise;
+  //  std::cin >> choise;
+  //  while (choise != 0) {
+  //      switch (choise) {
+  //      case 1:
+  //          std::cout << first * second;
+  //          break;
+  //      case 2:
+  //          std::cout << Karatsuba(first, second);
+  //          break;
+  //      case 3:
+  //          std::cout << Shonhage(first, second);
+  //          break;
+  //      default:
+  //          std::cout << "Wrong input!!!\nOnly 1-3 requires. Type 0 to exit or try again";
+  //      }
+  //      std::cout << std::endl;
+  //      std::cin >> choise;
+  //  }
+  //  return 0;
+  //  
     
-    */
     
-    
-    std::string b = "527572472462465";
-    LongInt a("12536646456546456456456546");
+   
+    std::string b = "21313130000";
+    LongInt a("1232323");
     LongInt c(b);
     LongInt e("0");
     
@@ -690,7 +808,7 @@ int main() {
     std::cout << e<<std::endl;
     
     LongInt f("0");
-    f = Shonhage(a, c);
+    f = Karatsuba(a, c);
     std::cout << f <<"Tom" << std::endl;
     return 0;
 }
