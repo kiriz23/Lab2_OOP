@@ -5,6 +5,13 @@
 #include <iomanip>
 #include <cmath>
 #include <chrono>
+#include <complex>
+
+const double PI = acos(-1);
+typedef std::complex<double> base;
+
+
+
 
 
 class LongInt {
@@ -117,6 +124,12 @@ public:
 
     const LongInt pow(LongInt n) const;
 
+    void normalize();
+
+    int get_base();
+
+    void set_base(int base);
+
     LongInt Karatsuba(const LongInt& left, const LongInt& right);
     
     
@@ -208,36 +221,33 @@ const LongInt operator -(LongInt left, const LongInt& right);
 
 
 const LongInt operator +(LongInt left, const LongInt& right) {
-    if (left.is_negative) {
-        if (right.is_negative) return -(-left + (-right));
-        else return right - (-left);
+    LongInt res = LongInt(left);
+    if (res.is_negative) {
+        if (right.is_negative) return -(-res + (-right));
+        else return right - (-res);
     }
-    else if (right.is_negative) return left - (-right);
+    else if (right.is_negative) return res - (-right);
     int carry = 0;
-    LongInt res("0");
-    for (size_t i = 0; i < std::max(left.digits.size(), right.digits.size()) || carry != 0; ++i) {
+    for (size_t i = 0; i < std::max(res.digits.size(), right.digits.size()) || carry != 0; ++i) {
         if (i == res.digits.size()) res.digits.push_back(0);
-        res.digits[i] = left.digits[i]+ carry + (i < right.digits.size() ? right.digits[i] : 0);
+        res.digits[i] += carry + (i < right.digits.size() ? right.digits[i] : 0);
         carry = res.digits[i] >= LongInt::BASE;
-        if (carry != 0) res.digits[i]= left.digits[i]-LongInt::BASE;
+        if (carry != 0) res.digits[i] -= LongInt::BASE;
     }
-
     return res;
 }
 
 const LongInt operator -(LongInt left, const LongInt& right) {
-    if (right.is_negative) return left + (-right);
-    else if (left.is_negative) return -(-left + right);
-    else if (left < right) return -(right - left);
+    LongInt res = LongInt(left);
+    if (right.is_negative) return res + (-right);
+    else if (res.is_negative) return -(-res + right);
+    else if (res < right) return -(right - res);
     int carry = 0;
-    LongInt res("0");
-    res.digits.resize(std::max(left.digits.size(), right.digits.size()));
     for (size_t i = 0; i < right.digits.size() || carry != 0; ++i) {
-        res.digits[i]= left.digits[i] - carry - (i < right.digits.size() ? right.digits[i] : 0);
+        res.digits[i] -= carry + (i < right.digits.size() ? right.digits[i] : 0);
         carry = res.digits[i] < 0;
         if (carry != 0) res.digits[i] += LongInt::BASE;
     }
-
     res.remove_leading_zeros();
     return res;
 }
@@ -370,40 +380,82 @@ const LongInt LongInt::pow(LongInt n) const {
 }
 
 
+void LongInt::normalize() {
+    while (digits.size() > 1 && digits.back() == 0)
+        digits.pop_back();
+
+    if (digits.empty())
+        digits.push_back(0);
+}
+
+
+void split_at_begin (LongInt& b, int m, LongInt& b1, LongInt& b2) {
+    b2.digits.assign(b.digits.end() - m, b.digits.end());
+    b1.digits.assign(b.digits.begin(), b.digits.end() - m);
+}
+
+
+void split_at_end(LongInt& b, int m, LongInt& b1, LongInt& b2) {
+    b2.digits.assign(b.digits.begin(), b.digits.begin() + m);
+    b1.digits.assign(b.digits.begin() + m, b.digits.end());
+}
+
+
+LongInt& long_pow_10(LongInt& b, int deg){
+    b.normalize();
+
+    int n = b.digits.size();
+
+
+    for (int i = n; i < n + deg; ++i)
+        b.digits.push_back(0);
+
+
+    for (int i = n + deg - 1; i >= deg; --i) {
+        b.digits[i] = b.digits[i - deg];
+    }
+
+    for (int i = 0; i < deg; ++i) {
+        b.digits[i] = 0;
+    }
+
+    return b;
+}
 
 
 
 
 
+LongInt Karatsuba(LongInt& b1, LongInt& b2) {
+    if (b1.digits.size() == 1 || b2.digits.size() == 1) {
+        return b1*b2;
+    }
 
+    int m = std::min(b1.digits.size(), b2.digits.size()) / 2;
+    int floor_m = (int)m;
+    int ceil_m = (int)(m + 0.5);
 
+    LongInt high1("0"), low1("0");
+    LongInt high2("0"), low2("0");
 
+    split_at_end(b1, m, high1, low1);
+    split_at_end(b2, m, high2, low2);
 
+    LongInt sum1 = low1 + high1;
+    LongInt sum2 = low2 + high2;
 
+    LongInt z0 = Karatsuba(low1, low2);
+    LongInt z1 = Karatsuba(sum1, sum2);
+    LongInt z2 = Karatsuba(high1, high2);
 
-LongInt Karatsuba(const LongInt& left, const LongInt& right) {
-    if (left<(LongInt("10")) or right < (LongInt("10"))) return (left*right);
-    
-    LongInt res("0"), x0("0"), x1("0"), y0("0"), y1("0"), z0("0"), z1("0"), z2("0");
-    long long m = std::min(left.digits.size(), right.digits.size());
-    long long k = floor( m/ 2);
-    x1.digits.resize(left.digits.size()-k);
-    x0.digits.resize(k);
-    y1.digits.resize(right.digits.size()-k);
-    y0.digits.resize(k);
-    x1.digits = { left.digits.begin(), left.digits.begin() + k };
-    x0.digits = { left.digits.begin() + k, left.digits.end() };
-    y1.digits = { right.digits.begin(), right.digits.begin() + k };
-    y0.digits = { right.digits.begin() + k, right.digits.end() };
-    
-    z0 = LongInt(Karatsuba(x1, y1));
-    z1 = LongInt(Karatsuba(x0 + x1, y0 + y1));
-    z2 = LongInt(Karatsuba(x0, y0));
-    
-    res = LongInt((z2 * LongInt(static_cast<long long>(pow(LongInt::BASE, (k * 2))))) + (((z1 - z2 )- z0) * LongInt(static_cast<long long>(pow(LongInt::BASE, (k))))) + z0);
-    
-    return res;
+    LongInt temp1 = z1 - z2;
+    LongInt temp2 = temp1 - z0;
+    LongInt s1 = LongInt(long_pow_10(z2, m * 2));
+    LongInt s2 = LongInt(long_pow_10(temp2, m));
+    LongInt s3 = LongInt(s1 + s2);
+    LongInt s4 = LongInt(s3 + z0);
 
+    return s4;
 }
 
 
@@ -415,6 +467,12 @@ long long size = std::min(left.digits.size(), right.digits.size());
 long long actual_size = size;
 if (size < 4) { return left * right; }
 size = size - size % 3;
+x0.digits.resize(size / 3);
+y0.digits.resize(size / 3);
+x1.digits.resize(size / 3);
+y1.digits.resize(size / 3);
+x2.digits.resize(size / 3);
+y2.digits.resize(right.digits.size()- actual_size);
 for (long long  i = 0; i < size / 3; i++)
 {
     x0.digits.push_back(left.digits[i]);
@@ -434,28 +492,35 @@ for (long long  i = actual_size; i < right.digits.size(); i++)
 {
     y2.digits.push_back(right.digits[i]);
 }
-y2byx2 = Toom_Cook(x2,y2);
-y1byx1 = Toom_Cook(x1, y1);
-y0byx0 = Toom_Cook(x0, y0);
+y2byx2 = LongInt(Toom_Cook(x2,y2));
+y1byx1 = LongInt(Toom_Cook(x1, y1));
+y0byx0 = LongInt(Toom_Cook(x0, y0));
 
-x2_x1 = x2+ x1;
-x2_x0 = x2+ x0;
-x1_x0 = x1+ x0;
-y2_y1 = y2+y1;
-y2_y0 = y2+ y0;
-y1_y0 = y1+y0;
+x2_x1 = LongInt(x2+ x1);
+x2_x0 = LongInt(x2+ x0);
+x1_x0 = LongInt(x1+ x0);
+y2_y1 = LongInt(y2+y1);
+y2_y0 = LongInt(y2+ y0);
+y1_y0 = LongInt(y1+y0);
 
-z10 = Toom_Cook(y1_y0, x1_x0);
-z10 = z10-y1byx1;
-z10 = z10-y0byx0;
+z10 = LongInt(Toom_Cook(y1_y0, x1_x0));
+z10 = LongInt(z10-y1byx1);
+z10 = LongInt(z10-y0byx0);
 
-z20 = Toom_Cook(y2_y0, x2_x0);
-z20 = z20-y2byx2;
-z20 = z20- y0byx0;
+z20 = LongInt(Toom_Cook(y2_y0, x2_x0));
+z20 = LongInt(z20-y2byx2);
+z20 = LongInt(z20- y0byx0);
 
-z21 = Toom_Cook(y2_y1, x2_x1);
-z21 = z21- y2byx2;
-z21 = z21-y1byx1;
+z21 = LongInt(Toom_Cook(y2_y1, x2_x1));
+z21 = LongInt(z21- y2byx2);
+z21 = LongInt(z21-y1byx1);
+res_pow_m1.digits.resize(size / 3);
+res_pow_2m1.digits.resize(2 * size / 3);
+res_pow_m2.digits.resize(2 * size / 3);
+res_pow_2m2.digits.resize(4 * size / 3);
+res_pow_m2m1.digits.resize(3 * size / 3);
+
+
 
 for (long long  i = 0; i < size / 3; i++)
 {
@@ -482,15 +547,101 @@ res_pow_2m1.digits.insert(end(res_pow_2m1.digits), begin(y1byx1.digits), end(y1b
 res_pow_m2.digits.insert(end(res_pow_m2.digits), begin(z20.digits), end(z20.digits));
 res_pow_2m2.digits.insert(end(res_pow_2m2.digits), begin(y2byx2.digits), end(y2byx2.digits));
 res_pow_m2m1.digits.insert(end(res_pow_m2m1.digits), begin(z21.digits), end(z21.digits));
-res_pow_0 = y0byx0;
-res = res_pow_2m2+ res_pow_m2;
-res = res+res_pow_2m1;
-res = res+ res_pow_m1;
-res = res+ res_pow_m2m1;
-res = res+res_pow_0;
+res_pow_0 = LongInt(y0byx0);
+res = LongInt(res_pow_2m2 + res_pow_m2);
+res = LongInt(res + res_pow_2m1);
+res = LongInt(res + res_pow_m1);
+res = LongInt(res + res_pow_m2m1);
+res = LongInt(res + res_pow_0);
+
 return res;
 
 }
+
+
+int LongInt::get_base() {
+    return LongInt::BASE;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+void fft(std::vector<base>& a, bool invert) {
+    int n = (int)a.size();
+    if (n == 1) return;
+
+    std::vector<base> a0(n / 2), a1(n / 2);
+    for (int i = 0, j = 0; i < n; i += 2, ++j) {
+        a0[j] = a[i];
+        a1[j] = a[i + 1];
+    }
+    fft(a0, invert);
+    fft(a1, invert);
+
+    double ang = 2 * PI / n * (invert ? -1 : 1);
+    base w(1), wn(cos(ang), sin(ang));
+    for (int i = 0; i < n / 2; ++i) {
+        a[i] = a0[i] + w * a1[i];
+        a[i + n / 2] = a0[i] - w * a1[i];
+        if (invert)
+            a[i] /= 2, a[i + n / 2] /= 2;
+        w *= wn;
+    }
+}
+
+
+LongInt Shonhage(LongInt& b1, LongInt& b2) {
+    LongInt res("0");
+    
+
+    std::vector<base> f1(b1.digits.begin(), b1.digits.end()), f2(b2.digits.begin(), b2.digits.end());
+    size_t n = 1;
+
+    while (n < std::max(f1.size(), f2.size())) n <<= 1;
+    n <<= 1;
+    f1.resize(n), f2.resize(n);
+
+    fft(f1, false), fft(f2, false);
+    for (size_t i = 0; i < n; ++i)
+        f1[i] *= f2[i];
+    fft(f1, true);
+
+    int carry = 0;
+    int temp;
+    for (size_t i = 0; i < n; ++i) {
+        temp = int(f1[i].real() + 0.5) + carry;
+        carry = temp / res.get_base();
+        temp %= res.get_base();
+
+        res.digits.push_back(temp);
+    }
+
+    res.digits.push_back(carry);
+    res.normalize();
+    res.digits.erase(res.digits.begin());
+    return res;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -528,8 +679,8 @@ int main() {
     */
     
     
-    std::string b = "5433";
-    LongInt a("1233");
+    std::string b = "527572472462465";
+    LongInt a("12536646456546456456456546");
     LongInt c(b);
     LongInt e("0");
     
@@ -539,7 +690,7 @@ int main() {
     std::cout << e<<std::endl;
     
     LongInt f("0");
-    f = Toom_Cook(a, c);
+    f = Shonhage(a, c);
     std::cout << f <<"Tom" << std::endl;
     return 0;
 }
